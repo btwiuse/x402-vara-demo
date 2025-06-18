@@ -83,7 +83,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             params: [{ chainId: baseSepoliaChainIdHex }],
           });
         } catch (switchError: any) {
-          // This error code indicates that the chain has not been added to MetaMask
+          // This error code indicates that the chain has not been added to browser wallet
           if (switchError.code === 4902) {
             await window.ethereum.request({
               method: 'wallet_addEthereumChain',
@@ -151,7 +151,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       };
 
       const handleChainChanged = () => {
-        // Reload the page as recommended by MetaMask
+        
         window.location.reload();
       };
 

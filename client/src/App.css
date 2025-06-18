@@ -237,4 +237,213 @@ footer {
   background: white;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-} 
+}
+
+/* Builder Resources */
+.builder-resources {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.builder-resources h3 {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.builder-resources p {
+  color: #718096;
+  margin-bottom: 1rem;
+}
+
+.resource-links {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.resource-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  color: #3182ce;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.resource-links a:hover {
+  background: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Payment section styling */
+.payment-section,
+.validation-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.payment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.payment-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.payment-card h3 {
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+}
+
+.payment-card .price {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #3182ce;
+  margin: 0.5rem 0;
+}
+
+.payment-card .description {
+  color: #718096;
+  margin-bottom: 1rem;
+}
+
+/* Session validation section */
+.validation-section {
+  margin-top: 2rem;
+}
+
+.session-validator {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.session-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: monospace;
+}
+
+.session-input:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.validate-btn {
+  padding: 0.75rem 1.5rem;
+  background: #3182ce;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.validate-btn:hover {
+  background: #2c5282;
+}
+
+.validation-result {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid;
+}
+
+.validation-result.success {
+  background: #f0fdf4;
+  border-color: #22c55e;
+  color: #166534;
+}
+
+.validation-result.error {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.session-details,
+.access-details {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Active sessions styling */
+.sessions-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+}
+
+.session-item code {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #4a5568;
+  flex: 1;
+}
+
+.session-type {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.session-type.24hour {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.session-type.onetime {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.session-expires {
+  font-size: 0.85rem;
+  color: #718096;
+}

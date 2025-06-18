@@ -37,44 +37,39 @@ export const api = {
     return response.data;
   },
 
-  getPricing: async () => {
-    const response = await apiClient.get("/api/pricing");
+  getPaymentOptions: async () => {
+    const response = await apiClient.get("/api/payment-options");
     return response.data;
   },
 
-  getSession: async (sessionId: string) => {
+  validateSession: async (sessionId: string) => {
     const response = await apiClient.get(`/api/session/${sessionId}`);
     return response.data;
   },
 
+  getActiveSessions: async () => {
+    const response = await apiClient.get("/api/sessions");
+    return response.data;
+  },
+
   // Paid endpoints
-  accessPremiumContent: async () => {
-    console.log("🔐 Requesting premium content access...");
-    const response = await apiClient.post("/api/premium/content");
-    console.log("✅ Premium content unlocked:", response.data);
+  purchase24HourSession: async () => {
+    console.log("🔐 Purchasing 24-hour session access...");
+    const response = await apiClient.post("/api/pay/session");
+    console.log("✅ 24-hour session created:", response.data);
     return response.data;
   },
 
-  performPremiumAction: async (action: string, parameters?: any) => {
-    console.log("⚡ Performing premium action:", action);
-    const response = await apiClient.post("/api/premium/action", {
-      action,
-      parameters,
-    });
-    console.log("✅ Premium action completed:", response.data);
-    return response.data;
-  },
-
-  subscribePremium: async () => {
-    console.log("🌟 Subscribing to premium...");
-    const response = await apiClient.post("/api/premium/subscribe");
-    console.log("✅ Premium subscription activated:", response.data);
+  purchaseOneTimeAccess: async () => {
+    console.log("⚡ Purchasing one-time access...");
+    const response = await apiClient.post("/api/pay/onetime");
+    console.log("✅ One-time access granted:", response.data);
     return response.data;
   },
 };
 
 // Types for API responses
-export interface PricingTier {
+export interface PaymentOption {
   name: string;
   endpoint: string;
   price: string;
@@ -83,6 +78,15 @@ export interface PricingTier {
 
 export interface Session {
   id: string;
-  createdAt: Date;
-  data?: any;
+  type: "24hour" | "onetime";
+  createdAt: string;
+  expiresAt: string;
+  validFor?: string;
+  remainingTime?: number;
+}
+
+export interface SessionValidation {
+  valid: boolean;
+  error?: string;
+  session?: Session;
 } 

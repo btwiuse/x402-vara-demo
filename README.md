@@ -1,14 +1,35 @@
-# x402 Browser Wallet Example
+# x402 Browser Wallet Payment Template
 
-A complete example demonstrating x402 payment integration with browser wallet (MetaMask) support. This example shows how to build micropayment-enabled services that users can access by signing payment requests with their own wallets.
+> 🛠️ **A starter template for building payment-enabled applications with x402**
 
-## Overview
+This is a simplified scaffolding project demonstrating [x402 payment protocol](https://x402.org) integration with browser wallet support. Use this as a foundation to build your own micropayment-enabled services, SaaS applications, or any project that needs frictionless web payments.
 
-This example includes:
-- **Server**: Hono-based API with x402 payment middleware
-- **Client**: React app with viem wallet integration
-- **Payment Flows**: Multiple pricing tiers ($0.10, $1.00, $5.00)
-- **Session Management**: Track payments and active sessions
+## What is x402?
+
+x402 is a payments protocol for the internet built on HTTP. It enables:
+- **1 line of code** to accept digital dollars
+- **No fees**, 2 second settlement
+- **$0.001 minimum** payments
+
+Learn more at [x402.org](https://x402.org) or check out the [GitHub repository](https://github.com/coinbase/x402).
+
+## This Template Includes
+
+✅ **Two Payment Models** ready to customize:
+- **24-Hour Session** ($1.00): Time-based access perfect for SaaS
+- **One-Time Access** ($0.10): Single-use payments for actions or content
+
+✅ **Complete Implementation**:
+- Server with x402 payment middleware (Hono)
+- React client with wallet integration (Viem)
+- Session management and validation
+- Clean, modern UI ready to customize
+
+✅ **Developer Friendly**:
+- TypeScript throughout
+- Easy to extend and modify
+- Well-documented code
+- Production-ready patterns
 
 ## Quick Start
 
@@ -38,113 +59,117 @@ This starts:
 - Server on http://localhost:3001
 - Client on http://localhost:5173
 
-## Architecture
-
-### Server (`/server`)
-
-The server demonstrates x402 payment middleware with three pricing tiers:
-
-```typescript
-// Different endpoints with different prices
-"/api/premium/content": { price: "$0.10" }    // Access content
-"/api/premium/action": { price: "$1.00" }     // Perform action  
-"/api/premium/subscribe": { price: "$5.00" }  // Monthly subscription
-```
-
-### Client (`/client`)
-
-The React client shows:
-1. **Wallet Connection**: Connect MetaMask and switch to Base Sepolia
-2. **Payment Requests**: Each button triggers a payment signature request
-3. **Session Display**: Shows successful payments and active sessions
-
-## Key Components
-
-### Wallet Context
-```typescript
-// Manages wallet connection state
-const { isConnected, address, walletClient } = useWallet();
-```
-
-### API Service
-```typescript
-// Updates axios with x402 payment interceptor
-updateApiClient(walletClient);
-
-// Make paid requests
-const result = await api.accessPremiumContent();
-```
+## How It Works
 
 ### Payment Flow
 
-1. User connects wallet (MetaMask)
-2. Client configures axios with x402 interceptor
-3. User clicks a payment button
-4. Server returns 402 Payment Required
-5. x402 interceptor catches this and prompts for signature
-6. User signs payment authorization in MetaMask
-7. Payment is processed and content is delivered
+1. **Connect Wallet**: User connects browser wallet to the app
+2. **Choose Payment Type**:
+   - **24-Hour Session**: Pay $1.00 to get a session ID valid for 24 hours
+   - **One-Time Access**: Pay $0.10 for single-use access (valid for 5 minutes)
+3. **Sign Payment**: User signs the payment request
+4. **Receive Session ID**: After payment, user gets a session ID
+5. **Validate Session**: Use the session ID to access protected resources
 
-## Use Cases
+### Session Types
 
-This pattern can be adapted for:
-- **Content Access**: Articles, videos, premium features
-- **API Usage**: Pay-per-call APIs, compute resources
-- **Subscriptions**: Time-based access to services
-- **Actions**: One-time operations, transactions
-- **Gaming**: In-game purchases, continues, power-ups
+#### 24-Hour Session
+- **Price**: $1.00
+- **Duration**: 24 hours from purchase
+- **Usage**: Unlimited during the valid period
+- **Use Case**: Users who need extended access
 
-## Customization
+#### One-Time Access  
+- **Price**: $0.10
+- **Duration**: 5 minutes to use
+- **Usage**: Single use only
+- **Use Case**: Quick one-off actions or trials
 
-### Adding New Endpoints
+## API Endpoints
 
-1. Add to server payment middleware:
-```typescript
-"/api/your-endpoint": {
-  price: "$0.50",
-  network: "base-sepolia"
-}
-```
+### Free Endpoints
 
-2. Create the endpoint handler:
-```typescript
-app.post("/api/your-endpoint", (c) => {
-  // Your logic here
-  return c.json({ success: true });
-});
-```
+- `GET /api/health` - Server health check
+- `GET /api/payment-options` - Available payment options
+- `GET /api/session/:sessionId` - Validate a session
+- `GET /api/sessions` - List active sessions
 
-3. Call from client:
-```typescript
-const result = await apiClient.post("/api/your-endpoint");
-```
+### Paid Endpoints
 
-### Changing Networks
+- `POST /api/pay/session` - Purchase 24-hour session ($1.00)
+- `POST /api/pay/onetime` - Purchase one-time access ($0.10)
 
-Update in `server/.env`:
-```env
-NETWORK=base-mainnet  # For production
-```
+## Client Features
+
+1. **Wallet Connection**: Connect/disconnect wallet
+2. **Payment Options**: Clear display of both payment types
+3. **Session Validation**: Input field to check session validity
+4. **Active Sessions**: Display of all active sessions
+5. **Real-time Updates**: Session list updates after purchases
 
 ## Testing
 
 1. Get Base Sepolia ETH from [Coinbase Faucet](https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet)
 2. Get Base Sepolia USDC from [Circle Faucet](https://faucet.circle.com/)
-3. Connect MetaMask to the app
-4. Try different payment buttons
-5. Check the console for payment flow logs
+3. Connect browser wallet to the app
+4. Purchase a session or one-time access
+5. Use the session validator to check your session
+6. Watch one-time sessions expire after use
 
-## Production Considerations
+## Use This Template For
 
-- Use Redis or a database for session storage
-- Add proper authentication for user-specific content
-- Implement rate limiting and abuse prevention
-- Set up monitoring for payment events
-- Use mainnet configuration for real payments
+This scaffolding is perfect as a starting point for:
 
-## Resources
+- **SaaS Applications**: Implement day passes, premium features, or usage-based billing
+- **Content Platforms**: Charge for articles, videos, or exclusive content
+- **API Services**: Monetize your API with per-call or time-based pricing
+- **Digital Tools**: Add trial periods or one-time purchase options
+- **Gaming**: Implement in-game purchases or pay-to-play mechanics
+- **Any Web Service**: If you can imagine it, you can charge for it with x402
 
-- [x402 Documentation](https://x402.org)
-- [Viem Documentation](https://viem.sh)
-- [Base Network](https://base.org)
-- [MetaMask Integration](https://metamask.io/developers/)
+## Customization Guide
+
+### Changing Payment Models
+
+The template uses two payment types, but you can easily modify them:
+
+```typescript
+// In server/index.ts, customize your payment endpoints:
+"/api/pay/custom": {
+  price: "$0.50",  // Your price
+  network,
+}
+```
+
+### Adding New Features
+
+1. **New Payment Tiers**: Add more options in the payment middleware
+2. **Different Session Durations**: Modify the expiration logic
+3. **Custom Validation**: Extend the session validation system
+4. **Database Integration**: Replace in-memory storage with your database
+5. **User Authentication**: Add user accounts and payment history
+
+### Styling and Branding
+
+The UI is intentionally minimal so you can add your own design system. All styles are in `client/src/App.css`.
+
+## Get Help
+
+Building something with x402? We're here to help!
+
+- 📚 **Documentation**: [x402.org](https://x402.org)
+- 💻 **Source Code**: [github.com/coinbase/x402](https://github.com/coinbase/x402)
+- 💬 **Community**: [Join our Discord](https://discord.gg/invite/cdp)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/coinbase/x402/issues)
+
+## Contributing
+
+Found a bug or have an improvement for this template? Please open an issue or submit a PR!
+
+## License
+
+This template is open source and available under the same license as the x402 protocol. See the [x402 repository](https://github.com/coinbase/x402) for details.
+
+---
+
+**Ready to build?** Fork this template and start accepting payments in minutes! 🚀

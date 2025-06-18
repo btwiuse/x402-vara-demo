@@ -30,28 +30,26 @@ app.use("/*", cors({
 interface Session {
   id: string;
   createdAt: Date;
-  data?: any;
-  userId?: string;
+  expiresAt: Date;
+  type: "24hour" | "onetime";
+  used?: boolean;
 }
 
 const sessions = new Map<string, Session>();
 
-// Configure x402 payment middleware with different pricing tiers
+// Configure x402 payment middleware with two payment options
 app.use(
   paymentMiddleware(
     payTo,
     {
-      // Different endpoints can have different prices
-      "/api/premium/content": {
-        price: "$0.10",
-        network,
-      },
-      "/api/premium/action": {
+      // 24-hour session access
+      "/api/pay/session": {
         price: "$1.00",
         network,
       },
-      "/api/premium/subscribe": {
-        price: "$5.00",
+      // One-time access/payment
+      "/api/pay/onetime": {
+        price: "$0.10",
         network,
       },
     },
@@ -74,42 +72,37 @@ app.get("/api/health", (c) => {
   });
 });
 
-// Free endpoint - get pricing info
-app.get("/api/pricing", (c) => {
+// Free endpoint - get payment options
+app.get("/api/payment-options", (c) => {
   return c.json({
-    tiers: [
+    options: [
       {
-        name: "Basic Content",
-        endpoint: "/api/premium/content",
-        price: "$0.10",
-        description: "Access premium content for 24 hours",
-      },
-      {
-        name: "Premium Action",
-        endpoint: "/api/premium/action",
+        name: "24-Hour Access",
+        endpoint: "/api/pay/session",
         price: "$1.00",
-        description: "Perform a premium action",
+        description: "Get a session ID for 24 hours of unlimited access",
       },
       {
-        name: "Monthly Access",
-        endpoint: "/api/premium/subscribe",
-        price: "$5.00",
-        description: "30-day unlimited access",
+        name: "One-Time Access",
+        endpoint: "/api/pay/onetime",
+        price: "$0.10",
+        description: "Single use payment for immediate access",
       },
     ],
   });
 });
 
-// Paid endpoint - access premium content ($0.10)
-app.post("/api/premium/content", (c) => {
+// Paid endpoint - 24-hour session access ($1.00)
+app.post("/api/pay/session", (c) => {
   const sessionId = uuidv4();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
+  
   const session: Session = {
     id: sessionId,
-    createdAt: new Date(),
-    data: {
-      type: "content",
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-    },
+    createdAt: now,
+    expiresAt,
+    type: "24hour",
   };
 
   sessions.set(sessionId, session);
@@ -117,33 +110,28 @@ app.post("/api/premium/content", (c) => {
   return c.json({
     success: true,
     sessionId,
-    message: "Payment successful! You now have 24-hour access to premium content.",
-    data: {
-      content: "This is exclusive premium content that required payment to access.",
-      unlockedFeatures: [
-        "Advanced analytics",
-        "Export functionality",
-        "Priority support",
-      ],
+    message: "24-hour access granted!",
+    session: {
+      id: sessionId,
+      type: "24hour",
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      validFor: "24 hours",
     },
   });
 });
 
-// Paid endpoint - perform premium action ($1.00)
-app.post("/api/premium/action", async (c) => {
-  const body = await c.req.json();
-  const { action, parameters } = body;
-
+// Paid endpoint - one-time access/payment ($0.10)
+app.post("/api/pay/onetime", async (c) => {
   const sessionId = uuidv4();
+  const now = new Date();
+  
   const session: Session = {
     id: sessionId,
-    createdAt: new Date(),
-    data: {
-      type: "action",
-      action,
-      parameters,
-      executedAt: new Date(),
-    },
+    createdAt: now,
+    expiresAt: new Date(now.getTime() + 5 * 60 * 1000), // 5 minutes to use
+    type: "onetime",
+    used: false,
   };
 
   sessions.set(sessionId, session);
@@ -151,71 +139,94 @@ app.post("/api/premium/action", async (c) => {
   return c.json({
     success: true,
     sessionId,
-    message: `Premium action "${action}" executed successfully!`,
-    result: {
-      action,
-      status: "completed",
-      timestamp: new Date().toISOString(),
+    message: "One-time access granted!",
+    access: {
+      id: sessionId,
+      type: "onetime",
+      createdAt: now.toISOString(),
+      validFor: "5 minutes (single use)",
     },
   });
 });
 
-// Paid endpoint - subscribe for monthly access ($5.00)
-app.post("/api/premium/subscribe", (c) => {
-  const sessionId = uuidv4();
-  const session: Session = {
-    id: sessionId,
-    createdAt: new Date(),
-    data: {
-      type: "subscription",
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-    },
-  };
-
-  sessions.set(sessionId, session);
-
-  return c.json({
-    success: true,
-    sessionId,
-    message: "Subscription activated! You have 30 days of unlimited access.",
-    subscription: {
-      status: "active",
-      expiresAt: session.data.expiresAt,
-      benefits: [
-        "Unlimited premium content access",
-        "All premium actions included",
-        "Priority support",
-        "Early access to new features",
-      ],
-    },
-  });
-});
-
-// Free endpoint - check session status
+// Free endpoint - validate session
 app.get("/api/session/:sessionId", (c) => {
   const sessionId = c.req.param("sessionId");
   const session = sessions.get(sessionId);
 
   if (!session) {
-    return c.json({ error: "Session not found" }, 404);
+    return c.json({ valid: false, error: "Session not found" }, 404);
+  }
+
+  const now = new Date();
+  const isExpired = now > session.expiresAt;
+  const isUsed = session.type === "onetime" && session.used;
+
+  if (isExpired || isUsed) {
+    return c.json({ 
+      valid: false, 
+      error: isExpired ? "Session expired" : "One-time access already used",
+      session: {
+        id: session.id,
+        type: session.type,
+        createdAt: session.createdAt.toISOString(),
+        expiresAt: session.expiresAt.toISOString(),
+        used: session.used,
+      }
+    });
+  }
+
+  // Mark one-time sessions as used
+  if (session.type === "onetime") {
+    session.used = true;
+    sessions.set(sessionId, session);
   }
 
   return c.json({
+    valid: true,
     session: {
       id: session.id,
-      createdAt: session.createdAt,
-      data: session.data,
+      type: session.type,
+      createdAt: session.createdAt.toISOString(),
+      expiresAt: session.expiresAt.toISOString(),
+      remainingTime: session.expiresAt.getTime() - now.getTime(),
     },
   });
 });
 
+// Free endpoint - list active sessions (for demo purposes)
+app.get("/api/sessions", (c) => {
+  const activeSessions = Array.from(sessions.values())
+    .filter(session => {
+      const isExpired = new Date() > session.expiresAt;
+      const isUsed = session.type === "onetime" && session.used;
+      return !isExpired && !isUsed;
+    })
+    .map(session => ({
+      id: session.id,
+      type: session.type,
+      createdAt: session.createdAt.toISOString(),
+      expiresAt: session.expiresAt.toISOString(),
+    }));
+
+  return c.json({ sessions: activeSessions });
+});
+
 console.log(`
-🚀 x402 Browser Wallet Example Server
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 x402 Payment Template Server
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 Accepting payments to: ${payTo}
 🔗 Network: ${network}
 🌐 Port: ${port}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 Payment Options:
+   - 24-Hour Session: $1.00
+   - One-Time Access: $0.10
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛠️  This is a template! Customize it for your app.
+📚 Learn more: https://x402.org
+💬 Get help: https://discord.gg/invite/cdp
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `);
 
 serve({
