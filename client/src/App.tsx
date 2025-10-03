@@ -246,16 +246,16 @@ function App() {
           Each purchase requires approval in wallet.
         </p>
         <div className="builder-resources">
-          <h3>🛠️ Build with x402</h3>
+          <h3>🛠️ Build with x402-vara</h3>
           <p>This is a template to help you build your own payment-enabled applications!</p>
           <div className="resource-links">
-            <a href="https://x402.org" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/varazone/x402-vara" target="_blank" rel="noopener noreferrer">
               📚 x402 Documentation
             </a>
-            <a href="https://github.com/coinbase/x402" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/varazone/x402-vara-demo" target="_blank" rel="noopener noreferrer">
               💻 GitHub Repository
             </a>
-            <a href="https://discord.gg/invite/cdp" target="_blank" rel="noopener noreferrer">
+            <a href="https://discord.gg/x8ZeSy6S6K" target="_blank" rel="noopener noreferrer">
               💬 Discord Community
             </a>
           </div>
