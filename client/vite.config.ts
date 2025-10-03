@@ -6,6 +6,7 @@ const PORT = process.env.PORT || '3001';
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
     port: 5173,
     proxy: {
       "/api": {
