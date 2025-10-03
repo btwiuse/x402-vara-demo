@@ -1,13 +1,11 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
-import type { WalletClient } from "viem";
-import { withPaymentInterceptor } from "x402-axios";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+import { withX402Interceptor, createUnsignedTransaction, useApi } from "./x402-utils";
+import type { InjectedAccountWithMeta } from "@polkadot/extension-inject/types";
 
 // Base axios instance without payment interceptor
 const baseApiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: window.origin,
   headers: {
     "Content-Type": "application/json",
   },
@@ -17,11 +15,11 @@ const baseApiClient = axios.create({
 let apiClient: AxiosInstance = baseApiClient;
 
 // Update the API client with a wallet
-export function updateApiClient(walletClient: WalletClient | null) {
-  if (walletClient && walletClient.account) {
+export function updateApiClient(walletClient: InjectedAccountWithMeta | null) {
+  if (walletClient && walletClient.address) {
     // Create axios instance with x402 payment interceptor
-    apiClient = withPaymentInterceptor(baseApiClient, walletClient as any);
-    console.log("💳 API client updated with wallet:", walletClient.account.address);
+    apiClient = withX402Interceptor(baseApiClient, walletClient as any);
+    console.log("💳 API client updated with wallet:", walletClient.address);
   } else {
     // No wallet connected - reset to base client
     apiClient = baseApiClient;
@@ -55,14 +53,14 @@ export const api = {
   // Paid endpoints
   purchase24HourSession: async () => {
     console.log("🔐 Purchasing 24-hour session access...");
-    const response = await apiClient.post("/api/pay/session");
+    const response = await apiClient.get("/api/pay/session");
     console.log("✅ 24-hour session created:", response.data);
     return response.data;
   },
 
   purchaseOneTimeAccess: async () => {
     console.log("⚡ Purchasing one-time access...");
-    const response = await apiClient.post("/api/pay/onetime");
+    const response = await apiClient.get("/api/pay/onetime");
     console.log("✅ One-time access granted:", response.data);
     return response.data;
   },
@@ -89,4 +87,4 @@ export interface SessionValidation {
   valid: boolean;
   error?: string;
   session?: Session;
-} 
+}

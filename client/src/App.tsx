@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { WalletConnect } from './components/WalletConnect';
-import { useWallet } from './contexts/WalletContext';
+import { useWallet } from './contexts/PolkadotWalletContext';
 import { api, updateApiClient, type PaymentOption, type Session } from './services/api';
 import './App.css';
 
 function App() {
-  const { walletClient } = useWallet();
+  const { selectedAccount } = useWallet();
   const [serverStatus, setServerStatus] = useState<string>('checking...');
   const [paymentOptions, setPaymentOptions] = useState<PaymentOption[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -15,8 +15,8 @@ function App() {
 
   // Update API client when wallet changes
   useEffect(() => {
-    updateApiClient(walletClient);
-  }, [walletClient]);
+    updateApiClient(selectedAccount);
+  }, [selectedAccount]);
 
   // Check server health on mount
   useEffect(() => {
@@ -28,7 +28,11 @@ function App() {
   const checkServerHealth = async () => {
     try {
       const health = await api.getHealth();
-      setServerStatus(`✅ Connected to ${health.config.network}`);
+      setServerStatus([
+        `🌐 Payment network: ${health.config.network}`,
+        `📥 Paying to: ${health.config.payTo}`,
+        `🖥️ Facilitator: ${health.config.facilitator ?? "(built-in)"}`,
+      ].join('\n'));
     } catch (error) {
       setServerStatus('❌ Server offline');
     }
@@ -61,11 +65,12 @@ function App() {
         type: 'success',
         message: result.message,
         session: result.session,
+        txHash: result.txHash || "N/A",
       });
     } catch (error: any) {
       setValidationResult({
         type: 'error',
-        message: error.message || 'Failed to purchase session',
+        message: error.response.data.message || error.message || 'Failed to purchase session',
       });
     } finally {
       setLoading(null);
@@ -81,11 +86,12 @@ function App() {
         type: 'success',
         message: result.message,
         access: result.access,
+        txHash: result.txHash || "N/A",
       });
     } catch (error: any) {
       setValidationResult({
         type: 'error',
-        message: error.message || 'Failed to purchase access',
+        message: error.response.data.message || error.message || 'Failed to purchase session',
       });
     } finally {
       setLoading(null);
@@ -121,7 +127,7 @@ function App() {
       <header>
         <h1>x402 Payment Template</h1>
         <p>Build your own payment-enabled app with this starter template</p>
-        <div className="server-status">{serverStatus}</div>
+        <div className="server-status"><pre>{serverStatus}</pre></div>
       </header>
 
       <main>
@@ -202,13 +208,14 @@ function App() {
                 <div className="session-details">
                   <p><strong>Session ID:</strong> {validationResult.session.id}</p>
                   <p><strong>Type:</strong> {validationResult.session.type}</p>
-                  <p><strong>Status:</strong> {validationResult.error}</p>
+                  {validationResult.txHash && (<p><strong>TxHash:</strong> {validationResult.txHash}</p>)}
                 </div>
               )}
               {validationResult.access && (
                 <div className="access-details">
                   <p><strong>Access ID:</strong> {validationResult.access.id}</p>
                   <p><strong>Valid for:</strong> {validationResult.access.validFor}</p>
+                  <p><strong>TxHash:</strong> {validationResult.txHash}</p>
                 </div>
               )}
             </div>
@@ -258,4 +265,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
