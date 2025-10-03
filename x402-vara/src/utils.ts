@@ -1,28 +1,29 @@
 import { ApiPromise, WsProvider } from "@polkadot/api";
-import { SignerPayloadJSON } from "@polkadot/types";
 import { z } from "zod";
+import type { PaymentData, VaraNetwork } from "./types";
 
-const RpcMap = {
+export const RpcMap: Record<string, string> = {
   "vara": "wss://rpc.vara.network",
   "vara-testnet": "wss://testnet.vara.network",
 };
 
-const API = new Map();
+const API = new Map<string, ApiPromise>();
 
-async function useApi(network) {
-  if (!API[network]) {
+export async function useApi(network: string): Promise<ApiPromise> {
+  if (!API.get(network)) {
     const rpc = RpcMap[network];
     const provider = new WsProvider(rpc);
-    API[network] = await ApiPromise.create({ provider });
+    const api = await ApiPromise.create({ provider });
+    API.set(network, api);
   }
-  return API[network];
+  return API.get(network)!;
 }
 
-async function sendAndWaitForFinalization(tx) {
+export async function sendAndWaitForFinalization(tx: any) {
   return new Promise(async (resolve, reject) => {
     const txHash = tx.hash.toHex();
 
-    const unsub = await tx.send(({ status, events }) => {
+    const unsub = await tx.send(({ status, events }: { status: any; events: any[] }) => {
       if (status.isFinalized) {
         let success = false;
         let message: string | null = null;
@@ -72,14 +73,8 @@ const PaymentDataSchema = z.object({
   network: z.enum(["vara", "vara-testnet"]),
 });
 
-interface PaymentData {
-  unsignedTransaction: SignedPayloadJSON;
-  signature: string;
-  signer: string;
-  network: "vara" | "vara-testnet";
-}
 
-function decodePaymentHeader(x: string): PaymentData {
+export function decodePaymentHeader(x: string): PaymentData | null {
   if (!x) return null;
 
   const decoded = atob(x);
@@ -88,11 +83,3 @@ function decodePaymentHeader(x: string): PaymentData {
 
   return data as PaymentData;
 }
-
-export {
-  decodePaymentHeader,
-  PaymentData,
-  RpcMap,
-  sendAndWaitForFinalization,
-  useApi,
-};

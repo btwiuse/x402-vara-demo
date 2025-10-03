@@ -1,5 +1,5 @@
 {
-  "name": "x402-client-example",
+  "name": "x402-vara-client-example",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -10,14 +10,10 @@
   "dependencies": {
     "@polkadot/extension-dapp": "^0.62.1",
     "@polkadot/extension-inject": "^0.62.1",
-    "@polkadot/keyring": "^13.5.6",
-    "@polkadot/types": "^16.4.8",
-    "@polkadot/util-crypto": "^13.5.6",
     "axios": "^1.10.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "viem": "^2.31.3",
-    "x402-axios": "^0.4.0"
+    "x402-vara": "link:../x402-vara"
   },
   "devDependencies": {
     "@types/react": "^18.3.17",

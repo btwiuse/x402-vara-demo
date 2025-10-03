@@ -7,17 +7,17 @@ import {
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import {
   decodePaymentHeader,
-  PaymentData,
   RpcMap,
   sendAndWaitForFinalization,
   useApi,
 } from "./utils";
+import type { PaymentData, PaymentOptions, TransactionResult } from "./types";
 
 /**
  * requirePayment middleware for x402 payment verification and submission
  */
-function requirePayment(options) {
-  return async (req, res, next) => {
+export function requirePayment(options: PaymentOptions) {
+  return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const {
       enabled = true,
       price,
@@ -32,7 +32,7 @@ function requirePayment(options) {
       return;
     }
 
-    const payload = req.headers["x-payment"];
+    const payload = req.headers["x-payment"] as string;
 
     if (!payload) {
       const resource = `${req.originalUrl}`;
@@ -65,7 +65,15 @@ function requirePayment(options) {
       return;
     }
 
-    const { isValid, message, status } = await verify(data);
+    if (!data) {
+      res.status(400).json({
+        error: "Bad request",
+        message: "Invalid payment data",
+      });
+      return;
+    }
+
+    const { isValid, message, status } = await verify!(data);
     if (!isValid) {
       res.status(status ?? 403).json({
         error: "Verification error",
@@ -74,7 +82,7 @@ function requirePayment(options) {
       return;
     }
 
-    const result = await settle(data);
+    const result = await settle!(data);
 
     if (!result.success) {
       res.status(result.status ?? 403).json({
@@ -90,12 +98,12 @@ function requirePayment(options) {
   };
 }
 
-async function useFacilitator({ network, facilitator }) {
+async function useFacilitator({ network, facilitator }: { network: string; facilitator?: string }) {
   if (!RpcMap[network]) return { supported: false };
 
   const api = await useApi(network);
 
-  const verifyRemotely = async (data) => {
+  const verifyRemotely = async (data: PaymentData) => {
     const res = await fetch(`${facilitator}/verify`, {
       method: "POST",
       headers: {
@@ -110,7 +118,7 @@ async function useFacilitator({ network, facilitator }) {
     return json;
   };
 
-  const settleRemotely = async (data) => {
+  const settleRemotely = async (data: PaymentData) => {
     const res = await fetch(`${facilitator}/settle`, {
       method: "POST",
       headers: {
@@ -135,9 +143,9 @@ async function useFacilitator({ network, facilitator }) {
   };
 }
 
-const verifyWithApi = (api) => async (data) => {
+const verifyWithApi = (api: any) => async (data: PaymentData) => {
   const { unsignedTransaction, signature, signer } = data;
-  const hashOrRaw = (u8a) => u8a.length > 256 ? blake2AsU8a(u8a) : u8a;
+  const hashOrRaw = (u8a: Uint8Array) => u8a.length > 256 ? blake2AsU8a(u8a) : u8a;
   const rawUnsignedTransaction = api.registry.createType(
     "ExtrinsicPayload",
     unsignedTransaction,
@@ -156,7 +164,7 @@ const verifyWithApi = (api) => async (data) => {
   return result;
 };
 
-const settleWithApi = (api) => async (data) => {
+const settleWithApi = (api: any) => async (data: PaymentData) => {
   const { unsignedTransaction, signature, signer } = data;
 
   const tx = api.tx(api.createType("Call", unsignedTransaction.method))
@@ -166,7 +174,7 @@ const settleWithApi = (api) => async (data) => {
       unsignedTransaction,
     );
 
-  let result = {
+  let result: TransactionResult = {
     txHash: null,
     success: false,
     message: null,
@@ -174,8 +182,8 @@ const settleWithApi = (api) => async (data) => {
   };
 
   try {
-    result = await sendAndWaitForFinalization(tx);
-  } catch (e) {
+    result = await sendAndWaitForFinalization(tx) as any;
+  } catch (e: any) {
     console.log(e.message);
     result.success = false;
     result.message = e.message;
@@ -184,7 +192,7 @@ const settleWithApi = (api) => async (data) => {
   return result;
 };
 
-const facilitatorRouter = express.Router();
+export const facilitatorRouter = express.Router();
 
 facilitatorRouter.post("/verify", async (req, res) => {
   const { network } = req.body;
@@ -215,5 +223,3 @@ facilitatorRouter.post("/settle", async (req, res) => {
   const result = await settleWithApi(api)(req.body);
   res.json(result);
 });
-
-export { facilitatorRouter, requirePayment };

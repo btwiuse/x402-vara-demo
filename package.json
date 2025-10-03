@@ -1,7 +1,7 @@
 {
-  "name": "browser-wallet-x402-example",
+  "name": "x402-vara-browser-wallet-example",
   "version": "1.0.0",
-  "description": "Example of x402 payments with browser wallet integration",
+  "description": "Example of x402-vara payments with browser wallet integration",
   "private": true,
   "scripts": {
     "dev": "concurrently \"bun dev:server\" \"bun dev:client\"",

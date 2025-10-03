@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
-import { withX402Interceptor, createUnsignedTransaction, useApi } from "./x402-utils";
+import { withX402Interceptor } from "x402-vara/client";
 import type { InjectedAccountWithMeta } from "@polkadot/extension-inject/types";
 
 // Base axios instance without payment interceptor
