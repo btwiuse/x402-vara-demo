@@ -1,8 +1,8 @@
-# x402 Browser Wallet Payment Template
+# x402-vara Browser Wallet Payment Template
 
-> 🛠️ **A starter template for building payment-enabled applications with x402**
+> 🛠️ **A starter template for building payment-enabled applications with x402-vara**
 
-This is a simplified scaffolding project demonstrating [x402 payment protocol](https://x402.org) integration with browser wallet support. Use this as a foundation to build your own micropayment-enabled services, SaaS applications, or any project that needs frictionless web payments.
+This is a simplified scaffolding project demonstrating [x402 payment protocol](https://x402.org) integration with browser wallet support on Vara Network. Use this as a foundation to build your own micropayment-enabled services, SaaS applications, or any project that needs frictionless web payments.
 
 ## What is x402?
 
@@ -11,17 +11,26 @@ x402 is a payments protocol for the internet built on HTTP. It enables:
 - **No fees**, 2 second settlement
 - **$0.001 minimum** payments
 
-Learn more at [x402.org](https://x402.org) or check out the [GitHub repository](https://github.com/coinbase/x402).
+## What is x402-vara?
+
+x402-vara is an implementation of x402 protocol for Vara Network. The official coinbase/x402 repo contains implementation for major EVM blockchains and Solana. Thanks to the chain-agnostic nature of x402, it is possible to add support for other non-EVM platforms like Vara Network.
+
+Currently x402-vara supports payments via its native currency VARA on mainnet and testnet. USDC/USDT stablecoin support is underway.
+
+Learn more at [x402.org](https://x402.org) and check out the GitHub repositories:
+
+- https://github.com/coinbase/x402
+- https://github.com/varazone/x402-vara
 
 ## This Template Includes
 
 ✅ **Two Payment Models** ready to customize:
-- **24-Hour Session** ($1.00): Time-based access perfect for SaaS
-- **One-Time Access** ($0.10): Single-use payments for actions or content
+- **24-Hour Session** (1.00 VARA): Time-based access perfect for SaaS
+- **One-Time Access** (0.10 VARA): Single-use payments for actions or content
 
 ✅ **Complete Implementation**:
-- Server with x402 payment middleware (Hono)
-- React client with wallet integration (Viem)
+- Server with x402 payment middleware (express)
+- React client with wallet integration (axios)
 - Session management and validation
 - Clean, modern UI ready to customize
 
@@ -43,9 +52,8 @@ bun install:all
 
 Create `server/.env`:
 ```env
-FACILITATOR_URL=https://x402.org/facilitator
-NETWORK=base-sepolia
-ADDRESS=0x_YOUR_WALLET_ADDRESS_HERE
+NETWORK=vara-testnet
+ADDRESS=kGkLEU3e3XXkJp2WK4eNpVmSab5xUNL9QtmLPh8QfCL2EgotW
 PORT=3001
 ```
 
@@ -59,14 +67,20 @@ This starts:
 - Server on http://localhost:3001
 - Client on http://localhost:5173
 
+Open http://localhost:5173 in browser with a compatible wallet installed:
+- SubWallet
+- Nova Wallet
+- Talisman
+- ...
+
 ## How It Works
 
 ### Payment Flow
 
 1. **Connect Wallet**: User connects browser wallet to the app
 2. **Choose Payment Type**:
-   - **24-Hour Session**: Pay $1.00 to get a session ID valid for 24 hours
-   - **One-Time Access**: Pay $0.10 for single-use access (valid for 5 minutes)
+   - **24-Hour Session**: Pay 1.00 VARA to get a session ID valid for 24 hours
+   - **One-Time Access**: Pay 0.10 VARA for single-use access (valid for 5 minutes)
 3. **Sign Payment**: User signs the payment request
 4. **Receive Session ID**: After payment, user gets a session ID
 5. **Validate Session**: Use the session ID to access protected resources
@@ -74,13 +88,13 @@ This starts:
 ### Session Types
 
 #### 24-Hour Session
-- **Price**: $1.00
+- **Price**: 1.00 VARA
 - **Duration**: 24 hours from purchase
 - **Usage**: Unlimited during the valid period
 - **Use Case**: Users who need extended access
 
 #### One-Time Access  
-- **Price**: $0.10
+- **Price**: 0.10 VARA
 - **Duration**: 5 minutes to use
 - **Usage**: Single use only
 - **Use Case**: Quick one-off actions or trials
@@ -96,8 +110,8 @@ This starts:
 
 ### Paid Endpoints
 
-- `POST /api/pay/session` - Purchase 24-hour session ($1.00)
-- `POST /api/pay/onetime` - Purchase one-time access ($0.10)
+- `POST /api/pay/session` - Purchase 24-hour session (1.00 VARA)
+- `POST /api/pay/onetime` - Purchase one-time access (0.10 VARA)
 
 ## Client Features
 
@@ -109,8 +123,8 @@ This starts:
 
 ## Testing
 
-1. Get Base Sepolia ETH from [Coinbase Faucet](https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet)
-2. Get Base Sepolia USDC from [Circle Faucet](https://faucet.circle.com/)
+1. Get Vara Testnet token from [Gear IDEA Faucet](https://idea.gear-tech.io/programs?node=wss%3A%2F%2Ftestnet.vara.network)
+2. Get USDC/USDT from [Vara Bridge](https://bridge.vara.network/) (optional, not required for this demo app)
 3. Connect browser wallet to the app
 4. Purchase a session or one-time access
 5. Use the session validator to check your session
@@ -135,10 +149,17 @@ The template uses two payment types, but you can easily modify them:
 
 ```typescript
 // In server/index.ts, customize your payment endpoints:
-"/api/pay/custom": {
-  price: "$0.50",  // Your price
-  network,
-}
+app.get(
+  "/api/pay/hello",
+  requirePayment({
+    price: {
+      amount: "0.10",
+      asset: "VARA",
+    },
+    network,
+    ...
+  }),
+...
 ```
 
 ### Adding New Features

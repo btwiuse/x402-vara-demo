@@ -1,14 +1,13 @@
-# x402 Server Example
+# x402-vara Server Example
 
-This server demonstrates x402 payment integration with multiple pricing tiers.
+This server demonstrates x402-vara payment integration with multiple pricing tiers.
 
 ## Setup
 
 1. Create a `.env` file:
 ```env
-FACILITATOR_URL=https://x402.org/facilitator
-NETWORK=base-sepolia
-ADDRESS=0x_YOUR_WALLET_ADDRESS_HERE
+NETWORK=vara-testnet
+ADDRESS=kGkLEU3e3XXkJp2WK4eNpVmSab5xUNL9QtmLPh8QfCL2EgotW
 PORT=3001
 ```
 
@@ -30,6 +29,5 @@ bun dev
 - `GET /api/session/:sessionId` - Check session status
 
 ### Paid Endpoints
-- `POST /api/premium/content` - Access premium content ($0.10)
-- `POST /api/premium/action` - Perform premium action ($1.00)
-- `POST /api/premium/subscribe` - Monthly subscription ($5.00) 
+- `POST /api/pay/session` - Purchase 24-hour session (1.00 VARA)
+- `POST /api/pay/onetime` - Purchase one-time access (0.10 VARA)
