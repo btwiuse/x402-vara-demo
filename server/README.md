@@ -14,12 +14,12 @@ PORT=3001
 
 2. Install dependencies:
 ```bash
-npm install
+bun install
 ```
 
 3. Run the server:
 ```bash
-npm run dev
+bun dev
 ```
 
 ## Endpoints

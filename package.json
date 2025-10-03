@@ -4,10 +4,10 @@
   "description": "Example of x402 payments with browser wallet integration",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "cd server && npm run dev",
-    "dev:client": "cd client && npm run dev",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+    "dev": "concurrently \"bun dev:server\" \"bun dev:client\"",
+    "dev:server": "cd server && bun dev",
+    "dev:client": "cd client && bun dev",
+    "install:all": "bun install && cd server && bun install && cd ../client && bun install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

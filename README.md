@@ -36,7 +36,7 @@ Learn more at [x402.org](https://x402.org) or check out the [GitHub repository](
 ### 1. Install Dependencies
 
 ```bash
-npm run install:all
+bun install:all
 ```
 
 ### 2. Configure the Server
@@ -52,7 +52,7 @@ PORT=3001
 ### 3. Run Both Server and Client
 
 ```bash
-npm run dev
+bun dev
 ```
 
 This starts:
