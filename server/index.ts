@@ -1,30 +1,32 @@
-import { config } from "dotenv";
-import { Hono } from "hono";
-import { serve } from "@hono/node-server";
-import { cors } from "hono/cors";
-import { paymentMiddleware, Network, Resource } from "x402-hono";
+import express from "express";
+import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
+import { facilitatorRouter, requirePayment } from "./x402";
 
-config();
+import "dotenv/config";
 
 // Configuration from environment variables
-const facilitatorUrl = process.env.FACILITATOR_URL as Resource || "https://x402.org/facilitator";
-const payTo = process.env.ADDRESS as `0x${string}`;
-const network = (process.env.NETWORK as Network) || "base-sepolia";
+const payTo = process.env.ADDRESS ||
+  "kGkLEU3e3XXkJp2WK4eNpVmSab5xUNL9QtmLPh8QfCL2EgotW";
+const network = process.env.NETWORK || "vara-testnet";
 const port = parseInt(process.env.PORT || "3001");
+const facilitator = process.env.FACILITATOR_URL;
 
 if (!payTo) {
   console.error("❌ Please set your wallet ADDRESS in the .env file");
   process.exit(1);
 }
 
-const app = new Hono();
+const app = express();
 
-// Enable CORS for frontend
-app.use("/*", cors({
+// Middleware
+app.use(express.json());
+app.use(cors({
   origin: ["http://localhost:5173", "http://localhost:3000"],
   credentials: true,
 }));
+
+app.use("/api/facilitator", facilitatorRouter);
 
 // Simple in-memory storage for sessions (use Redis/DB in production)
 interface Session {
@@ -37,55 +39,33 @@ interface Session {
 
 const sessions = new Map<string, Session>();
 
-// Configure x402 payment middleware with two payment options
-app.use(
-  paymentMiddleware(
-    payTo,
-    {
-      // 24-hour session access
-      "/api/pay/session": {
-        price: "$1.00",
-        network,
-      },
-      // One-time access/payment
-      "/api/pay/onetime": {
-        price: "$0.10",
-        network,
-      },
-    },
-    {
-      url: facilitatorUrl,
-    },
-  ),
-);
-
 // Free endpoint - health check
-app.get("/api/health", (c) => {
-  return c.json({
+app.get("/api/health", (req, res) => {
+  res.json({
     status: "ok",
     message: "Server is running",
     config: {
       network,
       payTo,
-      facilitator: facilitatorUrl,
+      facilitator,
     },
   });
 });
 
 // Free endpoint - get payment options
-app.get("/api/payment-options", (c) => {
-  return c.json({
+app.get("/api/payment-options", (req, res) => {
+  res.json({
     options: [
       {
         name: "24-Hour Access",
         endpoint: "/api/pay/session",
-        price: "$1.00",
+        price: "1.00 VARA",
         description: "Get a session ID for 24 hours of unlimited access",
       },
       {
         name: "One-Time Access",
         endpoint: "/api/pay/onetime",
-        price: "$0.10",
+        price: "0.10 VARA",
         description: "Single use payment for immediate access",
       },
     ],
@@ -93,69 +73,124 @@ app.get("/api/payment-options", (c) => {
 });
 
 // Paid endpoint - 24-hour session access ($1.00)
-app.post("/api/pay/session", (c) => {
-  const sessionId = uuidv4();
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
-  
-  const session: Session = {
-    id: sessionId,
-    createdAt: now,
-    expiresAt,
-    type: "24hour",
-  };
-
-  sessions.set(sessionId, session);
-
-  return c.json({
-    success: true,
-    sessionId,
-    message: "24-hour access granted!",
-    session: {
-      id: sessionId,
-      type: "24hour",
-      createdAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      validFor: "24 hours",
+app.get(
+  "/api/pay/session",
+  requirePayment({
+    price: {
+      amount: "1.00",
+      asset: "VARA",
     },
-  });
-});
+    description: "24-hour access to premium content",
+    network,
+    payTo,
+    facilitator,
+  }),
+  (req, res) => {
+    const sessionId = uuidv4();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
+
+    const session = {
+      id: sessionId,
+      createdAt: now,
+      expiresAt,
+      type: "24hour",
+    };
+
+    sessions.set(sessionId, session);
+
+    const txHash = res.get("X-PAYMENT-RESPONSE");
+
+    res.json({
+      success: true,
+      sessionId,
+      txHash,
+      message: "24-hour access granted!",
+      session: {
+        id: sessionId,
+        type: "24hour",
+        createdAt: now.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        validFor: "24 hours",
+      },
+    });
+  },
+);
 
 // Paid endpoint - one-time access/payment ($0.10)
-app.post("/api/pay/onetime", async (c) => {
-  const sessionId = uuidv4();
-  const now = new Date();
-  
-  const session: Session = {
-    id: sessionId,
-    createdAt: now,
-    expiresAt: new Date(now.getTime() + 5 * 60 * 1000), // 5 minutes to use
-    type: "onetime",
-    used: false,
-  };
-
-  sessions.set(sessionId, session);
-
-  return c.json({
-    success: true,
-    sessionId,
-    message: "One-time access granted!",
-    access: {
-      id: sessionId,
-      type: "onetime",
-      createdAt: now.toISOString(),
-      validFor: "5 minutes (single use)",
+app.get(
+  "/api/pay/onetime",
+  requirePayment({
+    price: {
+      amount: "0.10",
+      asset: "VARA",
     },
-  });
-});
+    description: "One-time access to premium content",
+    network,
+    payTo,
+    facilitator,
+  }),
+  (req, res) => {
+    const sessionId = uuidv4();
+    const now = new Date();
+
+    const session = {
+      id: sessionId,
+      createdAt: now,
+      expiresAt: new Date(now.getTime() + 5 * 60 * 1000), // 5 minutes to use
+      type: "onetime",
+      used: false,
+    };
+
+    sessions.set(sessionId, session);
+
+    const txHash = res.get("X-PAYMENT-RESPONSE");
+
+    res.json({
+      success: true,
+      sessionId,
+      txHash,
+      message: "One-time access granted!",
+      access: {
+        id: sessionId,
+        type: "onetime",
+        createdAt: now.toISOString(),
+        validFor: "5 minutes (single use)",
+      },
+    });
+  },
+);
+
+// Paid endpoint - one-time access/payment ($0.10)
+app.get(
+  "/api/pay/hello",
+  requirePayment({
+    price: {
+      amount: "0.10",
+      asset: "VARA",
+    },
+    description: "Example paid access to a GET endpoint",
+    network,
+    payTo,
+    facilitator,
+  }),
+  (req, res) => {
+    const txHash = res.get("X-PAYMENT-RESPONSE");
+
+    res.json({
+      hello: "world",
+      txHash,
+    });
+  },
+);
 
 // Free endpoint - validate session
-app.get("/api/session/:sessionId", (c) => {
-  const sessionId = c.req.param("sessionId");
+app.get("/api/session/:sessionId", (req, res) => {
+  const sessionId = req.params.sessionId;
   const session = sessions.get(sessionId);
 
   if (!session) {
-    return c.json({ valid: false, error: "Session not found" }, 404);
+    return res.status(404).json({ valid: false, error: "Session not found" });
   }
 
   const now = new Date();
@@ -163,8 +198,8 @@ app.get("/api/session/:sessionId", (c) => {
   const isUsed = session.type === "onetime" && session.used;
 
   if (isExpired || isUsed) {
-    return c.json({ 
-      valid: false, 
+    return res.json({
+      valid: false,
       error: isExpired ? "Session expired" : "One-time access already used",
       session: {
         id: session.id,
@@ -172,7 +207,7 @@ app.get("/api/session/:sessionId", (c) => {
         createdAt: session.createdAt.toISOString(),
         expiresAt: session.expiresAt.toISOString(),
         used: session.used,
-      }
+      },
     });
   }
 
@@ -182,7 +217,7 @@ app.get("/api/session/:sessionId", (c) => {
     sessions.set(sessionId, session);
   }
 
-  return c.json({
+  res.json({
     valid: true,
     session: {
       id: session.id,
@@ -195,41 +230,39 @@ app.get("/api/session/:sessionId", (c) => {
 });
 
 // Free endpoint - list active sessions (for demo purposes)
-app.get("/api/sessions", (c) => {
+app.get("/api/sessions", (req, res) => {
   const activeSessions = Array.from(sessions.values())
-    .filter(session => {
+    .filter((session) => {
       const isExpired = new Date() > session.expiresAt;
       const isUsed = session.type === "onetime" && session.used;
       return !isExpired && !isUsed;
     })
-    .map(session => ({
+    .map((session) => ({
       id: session.id,
       type: session.type,
       createdAt: session.createdAt.toISOString(),
       expiresAt: session.expiresAt.toISOString(),
     }));
 
-  return c.json({ sessions: activeSessions });
+  res.json({ sessions: activeSessions });
 });
 
-console.log(`
-🚀 x402 Payment Template Server
+app.listen(port, () => {
+  console.log(`
+🚀 x402 Payment Template Server (Express)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 Accepting payments to: ${payTo}
 🔗 Network: ${network}
 🌐 Port: ${port}
+🖥️ Facilitator: ${facilitator ?? "(built-in)"}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 Payment Options:
-   - 24-Hour Session: $1.00
-   - One-Time Access: $0.10
+   - /api/pay/session 24-Hour Session: 1.00 VARA
+   - /api/pay/onetime One-Time Access: 0.10 VARA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🛠️  This is a template! Customize it for your app.
 📚 Learn more: https://x402.org
 💬 Get help: https://discord.gg/invite/cdp
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`);
-
-serve({
-  fetch: app.fetch,
-  port,
-}); 
+  `);
+});
