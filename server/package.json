@@ -12,7 +12,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "uuid": "^11.0.6",
-    "x402-vara": "link:../x402-vara",
+    "x402-vara": "^0.1.2",
     "zod": "^4.1.11"
   },
   "devDependencies": {
